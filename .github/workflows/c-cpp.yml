@@ -1,0 +1,44 @@
+# build.yml
+name: Build
+on:
+  push:
+    branches: [ main ]
+    
+  workflow_dispatch:
+    inputs:
+      BUILD_VERSION:
+        description: 'Version of the build'
+        required: false
+        default: '0.0.0'
+      
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: 
+       image: devkitpro/devkita64
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+        with:
+            submodules: recursive
+      - name: build application
+        run: |
+          catnip -t Switch -D BUILD_VERSION=${{ github.event.inputs.BUILD_VERSION }}
+      - name: Ready artifacts
+        run: |
+          mkdir -p switch
+          mkdir -p config/luna/dump
+          mkdir -p config/luna/enctemplate
+          mv build/main.release/*.nro switch
+          touch config/luna/dump/.dumps
+          touch config/luna/enctemplate/.template
+      - name: Upload em artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: luna
+          path: |
+            switch
+            config
+          if-no-files-found: error
+          include-hidden-files: true
